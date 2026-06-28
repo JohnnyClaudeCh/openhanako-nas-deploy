@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mode": "lan",
+  "listenHost": "0.0.0.0",
+  "listenPort": 14500,
+  "customRemote": {
+    "enabled": false,
+    "baseUrl": null,
+    "wsUrl": null
+  },
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z"
+}

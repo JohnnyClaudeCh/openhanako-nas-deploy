@@ -1,0 +1,21 @@
+# Config templates only - JSON templates must not contain real credentials
+config/*.json
+config/*.yaml
+!config/*.template
+
+# SSH keys
+*id_rsa
+*id_ed25519
+*nas_key*
+*known_hosts
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/

@@ -1,0 +1,63 @@
+# HanaAgent Agent 配置
+# 编辑后放到 ~/.hanako-dev/agents/hanako/config.yaml
+
+agent:
+  name: <YOUR_AGENT_NAME>     # Agent 名称，如 Hanako
+  yuan: <YOUR_YUAN>           # 中文字体设置
+user:
+  name: "<YOUR_DISPLAY_NAME>" # 显示名称
+api:
+  provider: "<YOUR_DEFAULT_PROVIDER>"   # 默认模型提供商 ID
+embedding_api:
+  provider: ""                # 嵌入模型提供商
+
+models:
+  chat:
+    id: <YOUR_CHAT_MODEL_ID>
+    provider: <YOUR_CHAT_PROVIDER>
+  utility:
+    id: <YOUR_UTILITY_MODEL_ID>
+    provider: <YOUR_UTILITY_PROVIDER>
+  utility_large:
+    id: <YOUR_UTILITY_LARGE_MODEL_ID>
+    provider: <YOUR_UTILITY_LARGE_PROVIDER>
+  embedding: ""
+  embedding_dimensions: 1024
+
+memory:
+  enabled: true
+  token_budget: 2500
+  decay_per_day: 0.02
+  hit_bonus: 5
+  base_importance: 10
+  compile_threshold: 4.5
+  forget_speed: 1
+
+experience:
+  enabled: false
+
+search:
+  provider: auto
+  api_keys:
+    anysearch: ""
+    tavily: ""
+    brave: ""
+    serper: ""
+  api_key: ""
+
+skills:
+  enabled:
+    - skill-creator
+
+desk:
+  heartbeat_enabled: false
+  heartbeat_interval: 31
+  home_folder: /home/<YOUR_USERNAME>/Desktop/OH-WorkSpace
+
+tools:
+  disabled:
+    - dm
+    - workflow
+    - beautify
+
+last_cwd: /home/<YOUR_USERNAME>/Desktop/OH-WorkSpace

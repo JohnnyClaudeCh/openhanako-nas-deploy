@@ -1,0 +1,32 @@
+{
+  "providers": {
+    "deepseek": {
+      "baseUrl": "https://api.deepseek.com",
+      "api": "openai-completions",
+      "apiKey": "hana-runtime-api-key:deepseek",
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "name": "DeepSeek Chat",
+          "input": ["text"],
+          "contextWindow": 128000,
+          "reasoning": true
+        }
+      ]
+    },
+    "ollama-local": {
+      "baseUrl": "http://<YOUR_OLLAMA_IP>:11434/v1",
+      "api": "ollama",
+      "apiKey": "hana-runtime-api-key:ollama-local",
+      "models": [
+        {
+          "id": "<YOUR_MODEL_ID>",
+          "name": "<YOUR_MODEL_NAME>",
+          "input": ["text"],
+          "contextWindow": 128000,
+          "reasoning": false
+        }
+      ]
+    }
+  }
+}
