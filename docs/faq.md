@@ -1,143 +1,60 @@
-# FAQ - 常见问题
+# 常见问题
 
-## 服务相关
+## 安装与配置
 
-### Q: 启动后 `curl /api/health` 返回 403？
+### Q: 需要什么配置的 NAS？
 
-正常。403 表示服务在运行，只是未认证：
+最低：双核 CPU + 2GB 内存 + 10GB 磁盘。HanaAgent Server 本身不跑模型，主要消耗是 Node.js 运行时。
 
-```json
-{"error":"forbidden","reason":"missing_credential","connectionKind":"lan"}
-```
+### Q: 为什么不直接在 NAS 上跑 Ollama？
 
-### Q: 怎么获取设备凭据？
+NAS 通常是 ARM 或低功耗 x86，没有 GPU，跑本地模型速度很慢。推荐用另一台带 GPU 的机器跑 Ollama，NAS 通过 LAN 调用。
 
-首次在 Web UI 登录时会自动生成设备凭据，保存在 `~/.hanako-dev/device-credentials.json` 和 `~/.hanako-dev/devices.json` 中。
+### Q: 支持哪些模型提供商？
 
-### Q: 密码忘了怎么办？
+- DeepSeek API（云端，推荐）
+- Ollama（局域网 GPU 机器）
+- 任何兼容 OpenAI API 格式的服务
 
-停止服务，删除 `~/.hanako-dev/local-user-auth.json`，重启服务后重新注册。
+### Q: 外网访问安全吗？
 
-```bash
-sudo systemctl stop hanako
-rm /home/$USER/.hanako-dev/local-user-auth.json
-sudo systemctl start hanako
-# 然后浏览器重新打开 Web UI 注册
-```
+默认只有设备凭证认证（token-based）。建议加 HTTPS，方案参考：
+- acme.sh + 阿里云 DNS API（DNS-01 验证）
+- Cloudflare Tunnel（免费）
+- Caddy + 反向代理
 
-## 模型相关
+## 维护
 
-### Q: DeepSeek API Key 在哪里设置？
+### Q: 更新 HanaAgent 后设置页 404 了？
 
-方案一（推荐）：在 Web UI 中 Settings → API Keys → 添加 `deepseek` 密钥。
+`mobile-static.ts` 的白名单补丁被覆盖了。从 `openhanako-nas-connect` 重新运行 `patch_static.js`。
 
-方案二（API 方式）：
-```bash
-curl -X POST http://localhost:14500/api/secrets/set \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 你的设备凭据" \
-  -d '{"key":"deepseek","value":"sk-你的真实Key"}'
-```
+### Q: 更新桌面客户端后连不上 NAS？
 
-### Q: Ollama 不响应？
+`connection-csp.js` 的补丁被 app.asar 覆盖了。重新运行 `patch_asar_final.py`。
 
-1. 确认 GPU 机器上 Ollama 正在运行：`systemctl status ollama`
-2. 确认监听了 `0.0.0.0`：`ss -tlnp | grep 11434`
-3. 确认防火墙没拦截：`sudo ufw status`
-4. 在 NAS 上测试：`curl http://OLLAMA_IP:11434/api/tags`
-5. 如果使用 Windows，检查 Windows 防火墙是否放行 11434 端口
+### Q: 怎么看日志？
 
-### Q: 如何测试模型是否可用？
-
-```bash
-# 测试 DeepSeek
-curl -X POST http://localhost:14500/api/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_DEVICE_CREDENTIAL" \
-  -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"hello"}]}'
-
-# 测试 Ollama（直接从 NAS 发到 GPU 机器）
-curl http://OLLAMA_IP:11434/api/generate -d '{"model":"MODEL_ID","prompt":"hello"}'
-```
-
-## 网络相关
-
-### Q: 外网访问很慢？
-
-1. 检查上传带宽：speedtest-cli
-2. 考虑使用 Cloudflare Tunnel 代理
-3. 如果模型是本地 Ollama，外网只需传输文本消息，带宽要求不高
-4. 如果是 DeepSeek 云端 API，消息直接从客户端发到 DeepSeek，NAS 只做桥接
+- systemd 日志：`sudo journalctl -u hanako -n 100 -f`
+- 应用日志（如果重定向）：`/tmp/hanako.log`
+- HanaAgent 自己的日志配置目录：`~/.hanako-dev/logs/`
 
 ### Q: Cloudflare Tunnel 怎么配？
 
 ```bash
-# 在 NAS 上
-curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
-chmod +x /usr/local/bin/cloudflared
-
-# 登录
-cloudflared tunnel login
-
-# 创建隧道
 cloudflared tunnel create hanaagent
-
-# 配置 DNS
 cloudflared tunnel route dns hanaagent your-domain.com
-
-# 创建配置
-cat > ~/.cloudflared/config.yml << EOF
-tunnel: <TUNNEL_ID>
-credentials-file: /home/$USER/.cloudflared/<TUNNEL_ID>.json
-ingress:
-  - hostname: your-domain.com
-    service: http://localhost:14500
-  - service: http_status:404
-EOF
-
-# 安装为系统服务
-cloudflared service install
+cloudflared tunnel run hanaagent
 ```
 
-### Q: HTTPS 怎么搞？
+## 卸载
 
-推荐方案（不需要 80 端口）：
-
-```bash
-# acme.sh + 阿里云 DNS
-curl https://get.acme.sh | sh
-~/.acme.sh/acme.sh --issue --dns dns_ali -d your-domain.com
-~/.acme.sh/acme.sh --install-cert -d your-domain.com \
-  --key-file /etc/ssl/private/domain.key \
-  --fullchain-file /etc/ssl/certs/domain.crt
-
-# 然后用 Nginx 反代
-```
-
-## 维护相关
-
-### Q: 更新 HanaAgent 后设置页 404 了？
-
-更新会覆盖 `mobile-static.ts`，需要重新运行：
-
-```bash
-node /path/to/patch_static.js
-sudo systemctl restart hanako
-```
-
-### Q: 如何完全卸载？
+### Q: 完全卸载 HanaAgent
 
 ```bash
 sudo systemctl stop hanako
 sudo systemctl disable hanako
 sudo rm /etc/systemd/system/hanako.service
-sudo systemctl daemon-reload
-rm -rf /vol1/1000/Hanako          # 删除代码
-rm -rf /home/$USER/.hanako-dev     # 删除配置
+rm -rf /vol1/1000/Hanako
+rm -rf /home/$USER/.hanako-dev
 ```
-
-### Q: 日志在哪里？
-
-- systemd 日志：`sudo journalctl -u hanako -n 100 -f`
-- 应用日志（如果重定向）：`/tmp/hanako.log`
-- HanaAgent 自己的日志配置目录：`~/.hanako-dev/logs/`
